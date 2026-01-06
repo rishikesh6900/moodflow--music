@@ -16,15 +16,20 @@ async function analyzeMood(mood) {
   const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const prompt = `
-    You are a music recommendation engine.
-    Analyze the mood: "${mood}" and return a JSON object.
-    
+    You are a music expert.
+    Analyze the mood: "${mood}".
+    1. Generate a valid JSON object with energy, tempo, genres, and keywords.
+    2. Suggest 10 REAL song titles that match this mood perfectly.
+
     Output Contract (JSON ONLY):
     {
       "energy": "low" | "medium" | "high",
       "tempo": "slow" | "medium" | "fast",
       "genres": ["string", "string"],
-      "keywords": ["string", "string"]
+      "keywords": ["string", "string"],
+      "tracks": [
+        { "title": "Song Name", "artist": "Artist Name" }
+      ]
     }
   `;
 

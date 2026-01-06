@@ -11,10 +11,10 @@ const DEMO_AUDIO_POOL = [
 
 // Fallback tracks if Gemini fails
 const BACKUP_TRACKS = [
-  { id: "bf-1", title: "Sunny Day", artist: "MoodFlow Band", duration: "2:45", coverUrl: "https://placehold.co/400?text=Happy", previewUrl: DEMO_AUDIO_POOL[0], source: "backup" },
-  { id: "bf-2", title: "Rainy Mood", artist: "Chill AI", duration: "3:20", coverUrl: "https://placehold.co/400?text=Sad", previewUrl: DEMO_AUDIO_POOL[1], source: "backup" },
-  { id: "bf-3", title: "Power Up", artist: "Gym Rat", duration: "2:10", coverUrl: "https://placehold.co/400?text=Angry", previewUrl: DEMO_AUDIO_POOL[2], source: "backup" },
-  { id: "bf-4", title: "Zen Garden", artist: "Nature Sounds", duration: "4:00", coverUrl: "https://placehold.co/400?text=Calm", previewUrl: DEMO_AUDIO_POOL[3], source: "backup" }
+  { id: "bf-1", title: "Sunny Day", artist: "MoodFlow Band", duration: "2:45", coverUrl: "https://picsum.photos/seed/sunshine/400/400", previewUrl: DEMO_AUDIO_POOL[0], source: "backup" },
+  { id: "bf-2", title: "Rainy Mood", artist: "Chill AI", duration: "3:20", coverUrl: "https://picsum.photos/seed/rain/400/400", previewUrl: DEMO_AUDIO_POOL[1], source: "backup" },
+  { id: "bf-3", title: "Power Up", artist: "Gym Rat", duration: "2:10", coverUrl: "https://picsum.photos/seed/fire/400/400", previewUrl: DEMO_AUDIO_POOL[2], source: "backup" },
+  { id: "bf-4", title: "Zen Garden", artist: "Nature Sounds", duration: "4:00", coverUrl: "https://picsum.photos/seed/leaf/400/400", previewUrl: DEMO_AUDIO_POOL[3], source: "backup" }
 ];
 
 const fetchTracks = async (geminiSongList) => {
@@ -29,7 +29,8 @@ const fetchTracks = async (geminiSongList) => {
     title: song.title,
     artist: song.artist,
     duration: song.duration || "3:00",
-    coverUrl: `https://placehold.co/400x400/2a2a2a/FFF?text=${encodeURIComponent(song.artist)}`,
+    // Use Lorem Picsum with the song title as a seed to generate consistent, high-quality cover art images
+    coverUrl: `https://picsum.photos/seed/${encodeURIComponent(song.title + song.artist)}/400/400`,
     // Cycle through the demo audio files so every song plays SOMETHING
     previewUrl: DEMO_AUDIO_POOL[index % DEMO_AUDIO_POOL.length],
     source: 'ai-generated'
