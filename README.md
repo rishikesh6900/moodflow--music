@@ -17,194 +17,169 @@
 ## ✨ Features
 
 ### 🤖 AI-Driven Music Curation
-- Uses **Google Gemini (REST v1)** to analyze moods:
-  - 😊 Happy
-  - 😢 Sad
-  - 😌 Calm
-  - 😠 Angry
-- Generates a dynamic **Musical Intent**:
-  - Energy
-  - Tempo
-  - Genres
-  - Keywords
-- Built to **avoid repetition** via randomized intent variation
+- Uses **Google Gemini (REST v1)** to analyze moods (Happy, Sad, Calm, Angry)
+- Generates a dynamic **Musical Intent** (energy, tempo, genres, keywords)
+- Designed to **avoid repetition** via randomized intent variation
 
 ### 🎧 Real Audio Previews
-- Fetches **real song metadata and 30-second audio previews**
+- Fetches **real song metadata and 30-second previews**
 - Powered by the **iTunes Search API**
 - High-resolution album artwork (up to **600×600**)
 
-### 🎨 Emotion-Driven UI
-- Glassmorphism-inspired design
-- Entire UI adapts to the selected mood:
-  - Background gradients
-  - Accent colors
-  - Glow effects
-  - Animation speed & intensity
-
 ### ▶️ Custom Audio Player
-- Built from scratch using **HTML5 Audio**
-- Features:
-  - Play / Pause
-  - Seek bar with real-time progress
-  - Volume control
-  - Duration display
-- **Single audio source of truth**
-  - No overlapping playback
-  - Clean state management
+- Built using **HTML5 Audio**
+- Play / Pause, Seek, Volume controls
+- Real-time progress visualization
+- **Single audio source of truth** (no overlapping playback)
 
 ### 🛡️ Robust Fallback System
-- Graceful degradation when:
-  - Gemini quota is exhausted
-  - External APIs fail
-- Automatically falls back to offline intent logic
-- **The app never breaks — music always loads**
+- Graceful degradation when AI or APIs fail
+- Offline intent logic ensures music always loads
 
 ---
 
 ## 🧠 Architecture Overview
+
+```text
 User selects mood
-↓
-Gemini AI → Musical Intent (genres, energy, tempo)
-↓
+        ↓
+Gemini AI → Musical Intent
+        ↓
 iTunes Search API → Songs + Covers + Previews
-↓
+        ↓
 React Audio Player → UI + Playback
-
-
-> Gemini decides **direction**, not fixed songs —  
-> metadata APIs + randomness ensure fresh results every time.
+```
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- ⚛️ **React 18 (Vite)** — Fast, modern UI
-- 🟦 **TypeScript** — Type safety & maintainability
-- 🎨 **Tailwind CSS** — Utility-first styling & animations
-- 🔊 **HTML5 Audio API** — Native audio playback
-- 🧩 **Lucide React** — Clean SVG icons
+- React 18 (Vite)
+- TypeScript
+- Tailwind CSS
+- HTML5 Audio API
+- Lucide React
 
 ### Backend
-- 🟢 **Node.js**
-- 🚂 **Express.js** — Lightweight REST API
-- 🤖 **Google Gemini API (REST v1)** — AI mood analysis
-- 🎵 **iTunes Search API** — Songs, covers & previews
-- 🌐 **Fetch API** — HTTP requests without extra dependencies
+- Node.js
+- Express.js
+- Google Gemini API (REST v1)
+- iTunes Search API
+- Native Fetch API
 
 ---
 
-## 🚀 Getting Started
+## 📥 Installation
 
-### ✅ Prerequisites
-- Node.js **v16 or higher**
-- Google Cloud **Gemini API key**
-
----
-
-### 📥 Installation
-
-#### 1️⃣ Clone the repository
+### 1️⃣ Clone the repository
 ```bash
 git clone https://github.com/yourusername/moodflow-music.git
 cd moodflow-music
-2️⃣ Backend setup
+```
+
+### 2️⃣ Backend setup
+```bash
 cd backend
 npm install
+```
 
+Create a `.env.local` file in the **root directory**:
 
-Create a .env.local file in the root directory:
-
+```env
 GEMINI_API_KEY=your_google_api_key_here
 PORT=5000
+```
 
-3️⃣ Frontend setup
+### 3️⃣ Frontend setup
+```bash
 cd ../frontend
 npm install
+```
 
-▶️ Running the App
+---
 
-You must run both backend and frontend.
+## ▶️ Running the App
 
-Terminal 1 — Backend
+### Terminal 1 — Backend
+```bash
 cd backend
 npm start
-
+```
 
 Expected output:
-
+```
 🎵 MoodFlow Backend is ONLINE
+```
 
-Terminal 2 — Frontend
+### Terminal 2 — Frontend
+```bash
 cd frontend
 npm run dev
-
+```
 
 Open in browser:
-
+```
 http://localhost:5173
+```
 
-📁 Project Structure
+---
+
+## 📁 Project Structure
+
+```text
 root/
-├── .env.local                # Environment variables (not committed)
+├── .env.local
 ├── backend/
 │   ├── services/
-│   │   ├── llm.service.js    # Gemini AI integration
-│   │   ├── music.service.js # iTunes API + fallback logic
-│   ├── routes/               # Express API routes
-│   └── server.js             # Backend entry point
+│   │   ├── llm.service.js
+│   │   ├── music.service.js
+│   ├── routes/
+│   └── server.js
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # TrackCard, MoodSelector, Player
-│   │   ├── App.tsx           # Global audio state manager
-│   │   ├── types.ts          # TypeScript interfaces
+│   │   ├── components/
+│   │   ├── App.tsx
+│   │   ├── types.ts
 │   └── vite.config.ts
+```
 
-⚠️ Known Limitations
+---
 
-Gemini free tier has rate limits
+## ⚠️ Known Limitations
+- Gemini free tier has rate limits
+- Some tracks may not have preview audio
+- Full song playback requires licensed providers (future work)
 
-Some tracks may not have preview audio
+---
 
-Full song playback requires licensed providers (future work)
+## 🤝 Contributing
 
-These are handled gracefully via fallback logic.
-
-🤝 Contributing
-
-Contributions are welcome.
-
-# Fork the repo
-# Create a feature branch
+```bash
 git checkout -b feature/AmazingFeature
-
-# Commit changes
 git commit -m "Add AmazingFeature"
-
-# Push and open a PR
 git push origin feature/AmazingFeature
+```
 
-📄 License
+---
 
-Distributed under the MIT License.
+## 📄 License
 
-⭐ Final Note
+Distributed under the **MIT License**.
 
-MoodFlow is designed like a real production system:
+---
 
-AI is best-effort, not a single point of failure
+## ⭐ Final Note
 
-Backend and frontend are cleanly separated
-
-System works with or without AI
+MoodFlow is designed like a **real production system**:
+- AI is best-effort, not a single point of failure
+- Backend and frontend are cleanly separated
+- Works with or without AI
 
 Perfect for:
+- Hackathons
+- Portfolio projects
+- AI + Web demos
 
-Hackathons
-
-Portfolio projects
-
-AI + Web demos
 
 
