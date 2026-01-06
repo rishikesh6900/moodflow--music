@@ -1,53 +1,96 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const fallbackIntent = require('../utils/fallbackIntent');
-
-// Initialize Gemini
 const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-const analyzeMood = async (mood) => {
-  // If no key, fail fast to fallback
-  if (!genAI) {
-    console.warn("⚠️ No Gemini Key found. Using fallback.");
-    return fallbackIntent.getFallbackIntent(mood);
+/**
+ * Uses Gemini REST API (v1) to extract musical parameters from a mood.
+ * Returns { energy, tempo, genres, keywords } or null on failure.
+ * 
+ * NO SDK. NO v1beta.
+ */
+async function analyzeMood(mood) {
+  if (!apiKey) {
+    console.warn("⚠️ No Gemini API key. Skipping LLM.");
+    return null;
   }
 
-  try {
-    // Use gemini-1.5-flash for speed and JSON structure
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: { responseMimeType: "application/json" }
-    });
+  // MANDATORY: Use REST API v1
+  const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
-    const prompt = `
-      Analyze the mood: "${mood}".
-      Return a JSON object describing the musical characteristics to search for.
-      
-      Schema:
-      {
-        "energy": "low | medium | high",
-        "tempo": "slow | medium | fast",
-        "genres": ["string", "string"], 
-        "keywords": ["string", "string"]
+  const prompt = `
+    You are a music recommendation engine.
+    Analyze the mood: "${mood}" and return a JSON object.
+    
+    Output Contract (JSON ONLY):
+    {
+      "energy": "low" | "medium" | "high",
+      "tempo": "slow" | "medium" | "fast",
+      "genres": ["string", "string"],
+      "keywords": ["string", "string"]
+    }
+  `;
+
+  // Simple retry mechanism for transient 503 errors
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      console.log(`🤖 REST Request to Gemini (2.5-flash) for mood: ${mood} (Attempt ${attempt})`);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }]
+        })
+      });
+
+      // Handle 503 Service Unavailable (Overload)
+      if (response.status === 503) {
+        if (attempt === 1) {
+          console.warn("⚠️ Gemini 503 Overload. Retrying in 500ms...");
+          await new Promise(resolve => setTimeout(resolve, 500));
+          continue;
+        } else {
+          console.error("❌ Gemini 503 Persistent Failure.");
+          return null;
+        }
       }
 
-      Example:
-      {"energy": "high", "tempo": "fast", "genres": ["pop", "disco"], "keywords": ["summer", "party"]}
-    `;
+      if (!response.ok) {
+          const errText = await response.text();
+          console.error(`❌ Gemini API Error (${response.status}):`, errText);
+          return null; // Safe fallback
+      }
 
-    console.log(`🤖 Asking Gemini to analyze mood: ${mood}`);
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
+      const data = await response.json();
+      
+      // Safety check for response structure
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+          console.warn("⚠️ Gemini returned unexpected structure:", JSON.stringify(data).substring(0, 100));
+          return null;
+      }
 
-    return JSON.parse(text);
+      let text = data.candidates[0].content.parts[0].text;
 
-  } catch (error) {
-    console.error("❌ Gemini Analysis Failed:", error.message);
-    return fallbackIntent.getFallbackIntent(mood);
+      // Sanitize MarkDown
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+      const intent = JSON.parse(text);
+      return intent;
+
+    } catch (error) {
+      console.error(`❌ LLM Service Error (Attempt ${attempt}):`, error.message);
+      // Retry connection errors once
+      if (attempt === 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        continue;
+      }
+      return null;
+    }
   }
-};
+  return null;
+}
 
-module.exports = {
-  analyzeMood
-};
+module.exports = { analyzeMood };
+

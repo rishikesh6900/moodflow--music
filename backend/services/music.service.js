@@ -1,91 +1,39 @@
-const axios = require('axios');
+// NO DEEZER INTEGRATION - Mock Audio Service
+// We use Gemini to get the titles, but since AI can't generate real audio files,
+// we map them to a pool of high-quality royalty-free demo tracks so the UI works.
 
-const DEEZER_BASE_URL = 'https://api.deezer.com/search';
-
-// Robust fallback tracks that ALWAYS work (Offline Mode)
-const BACKUP_TRACKS = [
-  {
-    id: "backup-1",
-    title: "Happy Vibes (Demo)",
-    artist: "MoodFlow AI",
-    duration: "0:30",
-    coverUrl: "https://e-cdns-images.dzcdn.net/images/cover/2e018122cb56c862eb93cc3345479261/250x250-000000-80-0-0.jpg",
-    previewUrl: "https://cdns-preview-d.dzcdn.net/stream/cfff7b46cf6b6a21054b819f7f457599-3.mp3",
-    source: "offline"
-  },
-  {
-    id: "backup-2",
-    title: "Summer Breeze",
-    artist: "System Offline",
-    duration: "0:30",
-    coverUrl: "https://e-cdns-images.dzcdn.net/images/cover/033946279f045c7cc896f6437ded2816/250x250-000000-80-0-0.jpg",
-    previewUrl: "https://cdns-preview-b.dzcdn.net/stream/cfff7b46cf6b6a21054b819f7f457599-3.mp3",
-    source: "offline"
-  },
-    {
-    id: "backup-3",
-    title: "Chill Lo-Fi",
-    artist: "MoodFlow",
-    duration: "0:45",
-    coverUrl: "https://e-cdns-images.dzcdn.net/images/cover/df0e3ba23938be98d636838a3d376c6c/250x250-000000-80-0-0.jpg",
-    previewUrl: "https://cdns-preview-b.dzcdn.net/stream/cfff7b46cf6b6a21054b819f7f457599-3.mp3",
-    source: "offline"
-  }
+const DEMO_AUDIO_POOL = [
+  "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
+  "https://cdn.pixabay.com/download/audio/2022/03/24/audio_344fe41135.mp3",
+  "https://cdn.pixabay.com/download/audio/2022/02/07/audio_d06231bd46.mp3",
+  "https://cdn.pixabay.com/download/audio/2022/10/25/audio_96489a63v9.mp3"
 ];
 
-const fetchTracks = async (intent) => {
-  try {
-    // 1. Safe parsing of intent
-    const genre = intent.genres?.[0] || 'pop';
-    const keyword = intent.keywords?.[0] || '';
-    
-    // 2. Try specific query first
-    let query = `${genre} ${keyword}`.trim();
-    console.log(`🎵 Searching Deezer for: "${query}"`);
+// Fallback tracks if Gemini fails
+const BACKUP_TRACKS = [
+  { id: "bf-1", title: "Sunny Day", artist: "MoodFlow Band", duration: "2:45", coverUrl: "https://placehold.co/400?text=Happy", previewUrl: DEMO_AUDIO_POOL[0], source: "backup" },
+  { id: "bf-2", title: "Rainy Mood", artist: "Chill AI", duration: "3:20", coverUrl: "https://placehold.co/400?text=Sad", previewUrl: DEMO_AUDIO_POOL[1], source: "backup" },
+  { id: "bf-3", title: "Power Up", artist: "Gym Rat", duration: "2:10", coverUrl: "https://placehold.co/400?text=Angry", previewUrl: DEMO_AUDIO_POOL[2], source: "backup" },
+  { id: "bf-4", title: "Zen Garden", artist: "Nature Sounds", duration: "4:00", coverUrl: "https://placehold.co/400?text=Calm", previewUrl: DEMO_AUDIO_POOL[3], source: "backup" }
+];
 
-    let response = await axios.get(DEEZER_BASE_URL, {
-      params: { q: query, limit: 15, order: 'RANKING' },
-      timeout: 5000 // 5s timeout
-    });
-
-    let data = response.data?.data;
-
-    // 3. RETRY STRATEGY: If empty, try broader search (Genre only)
-    if (!data || data.length === 0) {
-      console.log(`⚠️ No results for "${query}". Retrying with genre: "${genre}"...`);
-      response = await axios.get(DEEZER_BASE_URL, {
-        params: { q: genre, limit: 15, order: 'RANKING' },
-        timeout: 5000
-      });
-      data = response.data?.data;
-    }
-
-    // 4. FAILSAFE: If still empty, return Backup Tracks
-    if (!data || data.length === 0) {
-      console.warn("⚠️ Deezer API returned 0 results. Serving backup tracks.");
-      return BACKUP_TRACKS;
-    }
-
-    // 5. Transform & Filter
-    const validTracks = data
-      .filter(t => t.preview) // Must have audio
-      .map(track => ({
-        id: track.id.toString(),
-        title: track.title,
-        artist: track.artist.name,
-        duration: formatDuration(track.duration), 
-        coverUrl: track.album.cover_medium || track.album.cover_small,
-        previewUrl: track.preview,
-        source: 'deezer'
-      }));
-      
-    return validTracks.length > 0 ? validTracks : BACKUP_TRACKS;
-
-  } catch (error) {
-    console.error("❌ Music Service Connection Failed:", error.message);
-    // CRITICAL: Always return data so frontend works
+const fetchTracks = async (geminiSongList) => {
+  // If Gemini failed (empty list), return safety tracks
+  if (!geminiSongList || geminiSongList.length === 0) {
     return BACKUP_TRACKS;
   }
+
+  // Map Gemini's text titles to our Track object with Fake Audio
+  return geminiSongList.map((song, index) => ({
+    id: `ai-track-${index}`,
+    title: song.title,
+    artist: song.artist,
+    duration: song.duration || "3:00",
+    coverUrl: `https://placehold.co/400x400/2a2a2a/FFF?text=${encodeURIComponent(song.artist)}`,
+    // Cycle through the demo audio files so every song plays SOMETHING
+    previewUrl: DEMO_AUDIO_POOL[index % DEMO_AUDIO_POOL.length],
+    source: 'ai-generated'
+  }));
 };
 
 const formatDuration = (seconds) => {

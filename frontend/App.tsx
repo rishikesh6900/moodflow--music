@@ -19,21 +19,28 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setTracks([]);
+
     try {
+      console.log(`Fetching tracks for mood: ${mood}...`);
       const response = await fetch(`http://localhost:5000/api/mood/${mood.toLowerCase()}`);
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
-      }
-      const data = await response.json();
       
-      if (data.tracks && Array.isArray(data.tracks) && data.tracks.length > 0) {
-        setTracks(data.tracks);
-      } else {
-        setError("AI could not generate songs for this mood. Please try again.");
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
       }
+
+      const data = await response.json();
+      console.log("Received data:", data);
+
+      if (data.tracks && Array.isArray(data.tracks)) {
+         setTracks(data.tracks);
+      } else {
+         console.warn("No tracks in response");
+         setTracks([]); 
+      }
+
     } catch (err) {
-      console.error("Failed to fetch music:", err);
-      setError("Failed to connect to backend. Is 'npm start' running in /backend?");
+      console.error("Fetch failed:", err);
+      setError("Unable to load songs. Please check backend connection.");
     } finally {
       setIsLoading(false);
     }

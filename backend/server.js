@@ -47,12 +47,28 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`
-  🎵 MoodFlow Backend is running!
-  -------------------------------------
-  URL:    http://localhost:${PORT}
-  Route:  http://localhost:${PORT}/api/mood/:mood
-  -------------------------------------
+  ╔═════════════════════════════════════════════════╗
+  ║                                                 ║
+  ║   🎵 MoodFlow Backend is ONLINE                 ║
+  ║   🚀 URL: http://localhost:${PORT}                 ║
+  ║                                                 ║
+  ╚═════════════════════════════════════════════════╝
   `);
+});
+
+// Handle Port In Use Error
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.error(`
+    🛑 ERROR: Port ${PORT} is already in use!
+    
+    ACTION REQUIRED:
+    1. Close this terminal.
+    2. Open Task Manager and kill any "Node.js" background processes.
+    3. Run 'npm start' again.
+    `);
+    process.exit(1);
+  }
 });
