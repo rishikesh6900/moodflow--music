@@ -15,21 +15,25 @@ async function analyzeMood(mood) {
   // MANDATORY: Use REST API v1
   const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
+  // Add randomness to prevent caching and repetition
+  const seed = Math.floor(Math.random() * 100000);
+  
   const prompt = `
-    You are a music expert.
+    You are a creative music curator.
     Analyze the mood: "${mood}".
-    1. Generate a valid JSON object with energy, tempo, genres, and keywords.
-    2. Suggest 10 REAL song titles that match this mood perfectly.
+    GENERATE A UNIQUE MUSIC INTENT.
+    Do NOT suggest specific songs.
+    
+    Random Seed: ${seed} (Use this to vary your answer from previous requests)
 
     Output Contract (JSON ONLY):
     {
       "energy": "low" | "medium" | "high",
       "tempo": "slow" | "medium" | "fast",
-      "genres": ["string", "string"],
-      "keywords": ["string", "string"],
-      "tracks": [
-        { "title": "Song Name", "artist": "Artist Name" }
-      ]
+      "genres": ["string", "string"],  // specific, niche genres
+      "keywords": ["string", "string"], // visual or emotional keywords
+      "era": "string", // e.g. "80s", "2010s", "modern", "jazz age"
+      "mood_variation": "string" // e.g. "melancholic but hopeful", "aggressive workout"
     }
   `;
 

@@ -1,12 +1,14 @@
-// NO DEEZER INTEGRATION - Mock Audio Service
-// We use Gemini to get the titles, but since AI can't generate real audio files,
-// we map them to a pool of high-quality royalty-free demo tracks so the UI works.
-
+// RELIABLE AUDIO POOL (iTunes Previews & FMA)
+// Replaced Pixabay links (often 403 Forbidden) with public durable URLS
 const DEMO_AUDIO_POOL = [
-  "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
-  "https://cdn.pixabay.com/download/audio/2022/03/24/audio_344fe41135.mp3",
-  "https://cdn.pixabay.com/download/audio/2022/02/07/audio_d06231bd46.mp3",
-  "https://cdn.pixabay.com/download/audio/2022/10/25/audio_96489a63v9.mp3"
+  // Happy / Upbeat
+  "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/9e/2a/3b/9e2a3b94-8743-41c0-2646-cd10c554900c/mzaf_3364235216399478479.plus.aac.p.m4a",
+  // Calm / Ambient
+  "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3",
+  // Energetic
+  "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/WFMU/Broke_For_Free/Directionless_EP/Broke_For_Free_-_01_-_Night_Owl.mp3",
+  // General Pop
+  "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/a4/c8/16/a4c8166c-54a7-c6b6-3a7b-32551a140f0c/mzaf_10065099307409249764.plus.aac.p.m4a"
 ];
 
 // Fallback tracks if Gemini fails
@@ -17,30 +19,74 @@ const BACKUP_TRACKS = [
   { id: "bf-4", title: "Zen Garden", artist: "Nature Sounds", duration: "4:00", coverUrl: "https://picsum.photos/seed/leaf/400/400", previewUrl: DEMO_AUDIO_POOL[3], source: "backup" }
 ];
 
-const fetchTracks = async (geminiSongList) => {
-  // If Gemini failed (empty list), return safety tracks
-  if (!geminiSongList || geminiSongList.length === 0) {
+const fetchTracks = async (intent) => {
+  // If Gemini didn't return a valid intent, return safety tracks
+  if (!intent) {
+    console.warn("[MusicService] No intent provided, using backups.");
     return BACKUP_TRACKS;
   }
 
-  // Map Gemini's text titles to our Track object with Fake Audio
-  return geminiSongList.map((song, index) => ({
-    id: `ai-track-${index}`,
-    title: song.title,
-    artist: song.artist,
-    duration: song.duration || "3:00",
-    // Use Lorem Picsum with the song title as a seed to generate consistent, high-quality cover art images
-    coverUrl: `https://picsum.photos/seed/${encodeURIComponent(song.title + song.artist)}/400/400`,
-    // Cycle through the demo audio files so every song plays SOMETHING
-    previewUrl: DEMO_AUDIO_POOL[index % DEMO_AUDIO_POOL.length],
-    source: 'ai-generated'
-  }));
-};
+  try {
+    // 1. Build Dynamic Query from Intent
+    // Use Math.random() to make it unpredictable even with same intent
+    const genres = intent.genres || ["Pop"];
+    const keywords = intent.keywords || ["Hits"];
+    
+    // Pick random elements to form a unique search term
+    const genre = genres[Math.floor(Math.random() * genres.length)];
+    const keyword = keywords[Math.floor(Math.random() * keywords.length)];
+    
+    // Mix query structure: "Genre Keyword" or just "Genre" or "Keyword"
+    const roll = Math.random();
+    let term = "";
+    if (roll < 0.5) term = `${genre} ${keyword}`;
+    else if (roll < 0.8) term = `${keyword} music`;
+    else term = `${genre}`;
 
-const formatDuration = (seconds) => {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
+    console.log(`[MusicService] Search Strategy: "${term}" from Intent:`, intent.mood_variation);
+    
+    const query = encodeURIComponent(term);
+    // Fetch 50 results to have a large pool to shuffle
+    const res = await fetch(`https://itunes.apple.com/search?term=${query}&media=music&entity=song&limit=50&explicit=No`);
+    
+    if (!res.ok) {
+        throw new Error("iTunes API error");
+    }
+    
+    const data = await res.json();
+    let results = data.results || [];
+
+    if (results.length === 0) {
+        console.warn("[MusicService] No results from iTunes. Using backups.");
+        return BACKUP_TRACKS;
+    }
+
+    // 2. Fisher-Yates Shuffle the 50 results
+    for (let i = results.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [results[i], results[j]] = [results[j], results[i]];
+    }
+
+    // 3. Select top 10 valid tracks (must have preview & art)
+    const tracks = results
+        .filter(t => t.previewUrl && t.artworkUrl100)
+        .slice(0, 10)
+        .map(t => ({
+            id: `itunes-${t.trackId}`,
+            title: t.trackName,
+            artist: t.artistName,
+            duration: "0:30", // Previews are standard 30s
+            coverUrl: t.artworkUrl100.replace('100x100', '600x600'), // Get High-Res
+            previewUrl: t.previewUrl,
+            source: "itunes-search" 
+        }));
+
+    return tracks.length > 0 ? tracks : BACKUP_TRACKS;
+
+  } catch (error) {
+    console.error(`[MusicService] Error: ${error.message}`);
+    return BACKUP_TRACKS;
+  }
 };
 
 module.exports = {

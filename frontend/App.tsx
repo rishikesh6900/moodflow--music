@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MoodType, MoodTheme, Track } from './types';
 import { MOOD_THEMES } from './constants';
 import Background from './components/Background';
@@ -10,15 +10,118 @@ import { Sparkles, Activity } from 'lucide-react';
 const App: React.FC = () => {
   const [activeMood, setActiveMood] = useState<MoodType | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showIntro, setShowIntro] = useState(true); // Control intro visibility
+  const [showIntro, setShowIntro] = useState(true);
+
+  // --- GLOBAL AUDIO STATE ---
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.8);
+
+  // Initialize Audio Object Once
+  useEffect(() => {
+    // SINGLE AUDIO INSTANCE
+    audioRef.current = new Audio();
+    audioRef.current.volume = volume;
+
+    const audio = audioRef.current;
+
+    const updateTime = () => setCurrentTime(audio.currentTime);
+    const updateDuration = () => setDuration(audio.duration || 0); // Update duration
+    const onEnded = () => setIsPlaying(false);
+    
+    // Safety: Handle errors that might stop playback
+    const onError = (e: Event) => {
+        console.error("Audio Error:", e);
+        setIsPlaying(false);
+    };
+
+    audio.addEventListener('timeupdate', updateTime);
+    audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
+
+    return () => {
+      audio.pause();
+      audio.removeEventListener('timeupdate', updateTime);
+      audio.removeEventListener('loadedmetadata', updateDuration);
+      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
+    };
+  }, []); // Run once on mount
+
+  // Sync state volume with audio object
+  useEffect(() => {
+      if(audioRef.current) audioRef.current.volume = volume;
+  }, [volume]);
+
+  const handlePlayPause = async (track: Track) => {
+    if (!audioRef.current || !track.previewUrl) return;
+
+    const audio = audioRef.current;
+
+    try {
+        // Case 1: Clicked the SAME track that is currently active
+        if (currentPlayingId === track.id) {
+            if (isPlaying) {
+                audio.pause();
+                setIsPlaying(false);
+            } else {
+                await audio.play();
+                setIsPlaying(true);
+            }
+        } 
+        // Case 2: Clicked a NEW track
+        else {
+            // Stop previous
+            audio.pause(); 
+            setIsPlaying(false);
+            setCurrentTime(0);
+
+            // Load new
+            setCurrentPlayingId(track.id);
+            audio.src = track.previewUrl;
+            audio.load(); // Ensure metadata loads
+            
+            // Play
+            await audio.play();
+            setIsPlaying(true);
+        }
+    } catch (err) {
+        console.error("Playback failed:", err);
+        setIsPlaying(false);
+    }
+  };
+
+  const handleSeek = (time: number) => {
+      if (audioRef.current) {
+          audioRef.current.currentTime = time;
+          setCurrentTime(time);
+      }
+  };
+
+  const handleVolumeChange = (vol: number) => {
+      setVolume(vol); // Effect hook updates audio.volume
+  };
 
   const handleMoodSelect = async (mood: MoodType) => {
+    // Stop audio when switching moods
+    if(audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setCurrentPlayingId(null);
+    
     setActiveMood(mood);
     setIsLoading(true);
     setError(null);
     setTracks([]);
+    setCurrentPlayingId(null);
 
     try {
       console.log(`Fetching tracks for mood: ${mood}...`);
@@ -133,6 +236,15 @@ const App: React.FC = () => {
                     track={track} 
                     theme={currentTheme!} 
                     isActive={!!activeMood}
+                    // Audio Props
+                    isCurrentTrack={currentPlayingId === track.id}
+                    isPlaying={currentPlayingId === track.id && isPlaying}
+                    currentTime={currentTime}
+                    duration={duration}
+                    volume={volume}
+                    onPlayPause={handlePlayPause}
+                    onSeek={handleSeek}
+                    onVolumeChange={handleVolumeChange}
                   />
                 ))
               )}
