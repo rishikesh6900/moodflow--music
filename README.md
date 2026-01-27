@@ -1,4 +1,4 @@
-# 🎵 MoodFlow
+#  MoodFlow
 ### AI-Powered Mood-Based Music Player
 
 > **MoodFlow** is a full-stack web application that generates  
@@ -14,31 +14,31 @@
 
 ---
 
-## ✨ Features
+## Features
 
-### 🤖 AI-Driven Music Curation
+###  AI-Driven Music Curation
 - Uses **Google Gemini (REST v1)** to analyze moods (Happy, Sad, Calm, Angry)
 - Generates a dynamic **Musical Intent** (energy, tempo, genres, keywords)
 - Designed to **avoid repetition** via randomized intent variation
 
-### 🎧 Real Audio Previews
+###  Real Audio Previews
 - Fetches **real song metadata and 30-second previews**
 - Powered by the **iTunes Search API**
 - High-resolution album artwork (up to **600×600**)
 
-### ▶️ Custom Audio Player
+### Custom Audio Player
 - Built using **HTML5 Audio**
 - Play / Pause, Seek, Volume controls
 - Real-time progress visualization
 - **Single audio source of truth** (no overlapping playback)
 
-### 🛡️ Robust Fallback System
+###  Robust Fallback System
 - Graceful degradation when AI or APIs fail
 - Offline intent logic ensures music always loads
 
 ---
 
-## 🧠 Architecture Overview
+##  Architecture Overview
 
 ```text
 User selects mood
@@ -70,15 +70,15 @@ React Audio Player → UI + Playback
 
 ---
 
-## 📥 Installation
+##  Installation
 
-### 1️⃣ Clone the repository
+###  Clone the repository
 ```bash
 git clone https://github.com/yourusername/moodflow-music.git
 cd moodflow-music
 ```
 
-### 2️⃣ Backend setup
+### Backend setup
 ```bash
 cd backend
 npm install
@@ -91,7 +91,7 @@ GEMINI_API_KEY=your_google_api_key_here
 PORT=5000
 ```
 
-### 3️⃣ Frontend setup
+###  Frontend setup
 ```bash
 cd ../frontend
 npm install
@@ -99,7 +99,7 @@ npm install
 
 ---
 
-## ▶️ Running the App
+## Running the App
 
 ### Terminal 1 — Backend
 ```bash
@@ -109,7 +109,7 @@ npm start
 
 Expected output:
 ```
-🎵 MoodFlow Backend is ONLINE
+ MoodFlow Backend is ONLINE
 ```
 
 ### Terminal 2 — Frontend
@@ -125,7 +125,7 @@ http://localhost:5173
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```text
 root/
@@ -146,14 +146,14 @@ root/
 
 ---
 
-## ⚠️ Known Limitations
+## Known Limitations
 - Gemini free tier has rate limits
 - Some tracks may not have preview audio
 - Full song playback requires licensed providers (future work)
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 ```bash
 git checkout -b feature/AmazingFeature
@@ -163,7 +163,7 @@ git push origin feature/AmazingFeature
 
 ---
 
-## 📄 License
+##  License
 
 Distributed under the **MIT License**.
 
